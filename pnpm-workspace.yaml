@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+  - starter-template
+
+overrides:
+  list: link:../../Library/pnpm/global/5/node_modules/list

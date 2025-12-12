@@ -1,0 +1,19 @@
+{
+  "name": "simple-wire-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "clean": "rm -rf node_modules packages/*/dist packages/*/node_modules packages/create-simple-wire/template"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.20.0",
+  "dependencies": {
+    "list": "link:../../Library/pnpm/global/5/node_modules/list"
+  }
+}
