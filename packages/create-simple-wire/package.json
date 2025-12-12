@@ -1,7 +1,7 @@
 {
   "name": "create-simple-wire",
   "description": "Create a new simple-wire application",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "bin": {
     "create-simple-wire": "dist/index.js"
   },
@@ -10,7 +10,11 @@
     "type": "git",
     "url": "https://github.com/meysius/simple-wire"
   },
-  "keywords": ["cli", "scaffold", "simple-wire"],
+  "keywords": [
+    "cli",
+    "scaffold",
+    "simple-wire"
+  ],
   "author": "Meysam Feghhi",
   "files": [
     "dist",
@@ -20,14 +24,15 @@
     "prebuild": "rm -rf template && cp -r ../../starter-template template && rm -rf template/node_modules template/dist",
     "build": "tsc"
   },
-  "dependencies": {
-    "fs-extra": "^11.2.0",
-    "prompts": "^2.4.2"
-  },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.10.0",
     "@types/prompts": "^2.4.9",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "fs-extra": "^11.3.2",
+    "kleur": "^4.1.5",
+    "prompts": "^2.4.2"
   }
 }

@@ -18,8 +18,11 @@ importers:
   packages/create-simple-wire:
     dependencies:
       fs-extra:
-        specifier: ^11.2.0
+        specifier: ^11.3.2
         version: 11.3.2
+      kleur:
+        specifier: ^4.1.5
+        version: 4.1.5
       prompts:
         specifier: ^2.4.2
         version: 2.4.2
@@ -984,6 +987,10 @@ packages:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
     engines: {node: '>=6'}
 
+  kleur@4.1.5:
+    resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
+    engines: {node: '>=6'}
+
   lower-case@2.0.2:
     resolution: {integrity: sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==}
 
@@ -1567,7 +1574,7 @@ snapshots:
   '@types/fs-extra@11.0.4':
     dependencies:
       '@types/jsonfile': 6.1.4
-      '@types/node': 20.19.26
+      '@types/node': 24.10.3
 
   '@types/http-errors@2.0.5': {}
 
@@ -1591,7 +1598,7 @@ snapshots:
 
   '@types/prompts@2.4.9':
     dependencies:
-      '@types/node': 20.19.26
+      '@types/node': 24.10.3
       kleur: 3.0.3
 
   '@types/qs@6.14.0': {}
@@ -1963,6 +1970,8 @@ snapshots:
       graceful-fs: 4.2.11
 
   kleur@3.0.3: {}
+
+  kleur@4.1.5: {}
 
   lower-case@2.0.2:
     dependencies:

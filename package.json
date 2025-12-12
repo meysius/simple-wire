@@ -6,8 +6,11 @@
   "main": "index.js",
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm -r dev",
-    "clean": "rm -rf node_modules packages/*/dist packages/*/node_modules packages/create-simple-wire/template"
+    "create-simple-wire": "pnpm --filter create-simple-wire run build && cd .. && node simple-wire/packages/create-simple-wire/dist/index.js",
+    "dev": "pnpm --parallel --filter simple-wire --filter ./starter-template run dev",
+    "clean": "rm -rf node_modules starter-template/dist starter-template/node_modules packages/*/dist packages/*/node_modules packages/create-simple-wire/template",
+    "publish:simple-wire": "pnpm --filter simple-wire run build && pnpm --filter simple-wire publish --access public --no-git-checks",
+    "publish:create-simple-wire": "pnpm --filter create-simple-wire run build && pnpm --filter create-simple-wire publish --access public --no-git-checks"
   },
   "keywords": [],
   "author": "",
