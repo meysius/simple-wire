@@ -1,6 +1,6 @@
 import pino from "pino";
-import { BaseConfig } from "./config";
-import { GetAsyncContextFn } from "./async-context";
+import { IConfig } from "./config";
+import { AsyncContextGetter, IAsyncContext } from "./async-context";
 
 export interface ILogger {
   info(message: string): void;
@@ -8,24 +8,22 @@ export interface ILogger {
 }
 
 type LoggerDeps = {
-  config: BaseConfig;
-  getAsyncContext: GetAsyncContextFn;
+  config: IConfig;
+  getAsyncContext: AsyncContextGetter<IAsyncContext>;
 }
 
 export class Logger implements ILogger {
-  private readonly getAsyncContext: GetAsyncContextFn;
   private readonly pino: pino.Logger;
 
   constructor({ getAsyncContext, config }: LoggerDeps) {
-    this.getAsyncContext = getAsyncContext;
     this.pino = pino({
       mixin: () => {
-        const context = this.getAsyncContext();
-        if (!context) return {};
-        return {
-          requestId: context.requestId,
-          ...Object.fromEntries(context.logContext)
-        };
+        let logContext = {};
+        try {
+          const context = getAsyncContext();
+          logContext = context.getLogContext();
+        } catch {}
+        return { ...logContext };
       },
       transport: config.NODE_ENV === 'development' ? {
         target: 'pino-pretty',

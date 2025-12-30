@@ -1,0 +1,19 @@
+import { Request } from "express";
+import { IAsyncContext } from "simple-wire";
+
+export class AsyncContext implements IAsyncContext {
+  private logContext: Record<string, string | number | boolean>;
+
+  constructor(req: Request) {
+    const requestId = (req.headers['x-request-id'] as string) || `req-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    this.logContext = { requestId };
+  }
+
+  getLogContext(): Record<string, string | number | boolean> {
+    return this.logContext;
+  }
+
+  setInLogContext(key: string, value: string | number | boolean): void {
+    this.logContext[key] = value;
+  }
+}

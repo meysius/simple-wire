@@ -1,13 +1,24 @@
-import 'dotenv/config';
-import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import * as schema from './schema';
+import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
+import { Config } from '@/config';
+import * as identitySchema from "@/domain/identity/identity.schema";
 
-export type DrizzleDb = NodePgDatabase<typeof schema>;
+export const schema = {
+  ...identitySchema,
+  // Add other domain schemas here
+};
 
-export function createDbClient(): DrizzleDb {
+export type Schema = typeof schema;
+
+export type DrizzleDb = NodePgDatabase<Schema>;
+
+type createDbClientProps = {
+  config: Config;
+};
+
+export function createDbClient({ config }: createDbClientProps): DrizzleDb {
   const client = new Pool({
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: config.DATABASE_URL,
   });
-  return drizzle<typeof schema>({ client });
+  return drizzle<Schema>({ client });
 }

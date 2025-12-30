@@ -1,32 +1,35 @@
-import 'dotenv/config';
-import { createApp, BaseCradle } from "simple-wire";
-import { AuthService } from './services/auth-service';
-import { UserController } from "./controllers/user-controller";
-import { asClass, asFunction } from "awilix";
-import { Config, ConfigSchema } from "./config";
+import { Request } from "express";
+import { createApp, BaseCradle, Logger } from "simple-wire";
+import { asClass, asFunction, asValue } from "awilix";
+import { AsyncContext } from "./async-context";
+import { config, Config } from "./config";
 import { DrizzleDb, createDbClient } from "./db";
-import { IUserRepository, UserRepository } from "./repos/users";
+import { UsersController } from "./controllers/users.controller";
+import { IdentityService } from "./domain/identity/identity.service";
+import { IdentityRepo, DrizzleIdentityRepo } from "./domain/identity/identity.repo";
 
 interface ProvidersCradle {
   db: DrizzleDb;
-  authService: AuthService;
-  userRepository: IUserRepository;
+  identityService: IdentityService;
+  identityRepo: IdentityRepo;
 }
 
 interface ControllersCradle {
-  userController: UserController;
+  usersController: UsersController;
 }
 
-export type Cradle = ProvidersCradle & ControllersCradle & BaseCradle<Config>;
+export type AppDependencies = BaseCradle<Config, AsyncContext> & ProvidersCradle & ControllersCradle;
 
-createApp<Config, ProvidersCradle, ControllersCradle>({
-  configSchema: ConfigSchema,
-  providers: {
-    authService: asClass(AuthService).singleton(),
-    userRepository: asClass(UserRepository).singleton(),
-    db: asFunction(createDbClient).singleton(),
-  },
+createApp<Config, AsyncContext, ControllersCradle, ProvidersCradle>({
+  createAsyncContext: (req: Request) => new AsyncContext(req),
+  logger: asClass(Logger).singleton(),
+  config: asValue(config),
   controllers: {
-    userController: asClass(UserController).singleton(),
-  }
+    usersController: asClass(UsersController).singleton(),
+  },
+  providers: {
+    db: asFunction(createDbClient).singleton(),
+    identityService: asClass(IdentityService).singleton(),
+    identityRepo: asClass(DrizzleIdentityRepo).singleton(),
+  },
 });

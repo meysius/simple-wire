@@ -1,59 +1,61 @@
 import express, { Request, Response } from "express";
-import { InjectionMode, createContainer, asClass, asValue, NameAndRegistrationPair, Resolver } from "awilix";
-import { z } from "zod";
+import { AsyncLocalStorage } from "async_hooks";
+import { InjectionMode, createContainer, asValue, NameAndRegistrationPair, Resolver } from "awilix";
 import { IController } from "./controller";
 import { Logger, ILogger } from "./logger";
-import { getAsyncContext, Context, runWithContext, GetAsyncContextFn } from "./async-context";
-import { BaseConfig } from "./config";
+import { AsyncContextGetter, IAsyncContext, createAsyncContextGetter } from "./async-context";
+import { IConfig } from "./config";
 
-export interface BaseCradle<T extends BaseConfig> {
-  config: T;
+export interface BaseCradle<C extends IConfig, AC extends IAsyncContext> {
+  config: C;
+  getAsyncContext: AsyncContextGetter<AC>;
   logger: ILogger;
-  getAsyncContext: GetAsyncContextFn;
 }
 
 type StrictMap<T> = {
   [K in keyof T]: Resolver<T[K]>
 };
 
-export interface AppOptions<T extends BaseConfig, P, C> {
-  configSchema: z.ZodType<T>;
-  providers: StrictMap<P>;
-  controllers: StrictMap<C>;
+export interface AppOptions<C extends IConfig, AC extends IAsyncContext, ControllersCradle, ProvidersCradle> {
+  createAsyncContext: (req: Request) => AC;
+  config: Resolver<C>;
+  logger: Resolver<ILogger>;
+  controllers: StrictMap<ControllersCradle>;
+  providers: StrictMap<ProvidersCradle>;
 }
 
-function requestContextMiddleware(req: Request, res: Response, next: Function) {
-  const requestId = (req.headers['x-request-id'] as string) || `req-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  const context = new Context(requestId);
-  runWithContext(context, () => next());
-}
-
-export async function createApp<T extends BaseConfig, P, C>(
-  options: AppOptions<T, P, C>
+export async function createApp<C extends IConfig, AC extends IAsyncContext, ControllersCradle, ProvidersCradle>(
+  options: AppOptions<C, AC, ControllersCradle, ProvidersCradle>
 ) {
-  const app = express();
-  const config = options.configSchema.parse(process.env);
-  const port = config.PORT;
 
-  app.use(express.json());
-  app.use(requestContextMiddleware);
-
-  type FullCradle = P & C & BaseCradle<T>;
+  type FullCradle = BaseCradle<C, AC> & ControllersCradle & ProvidersCradle;
 
   const container = createContainer<FullCradle>({
     injectionMode: InjectionMode.PROXY,
     strict: true,
   });
 
+  const asyncStorage = new AsyncLocalStorage<AC>();
+
+  function requestContextMiddleware(req: Request, res: Response, next: Function) {
+    const context = options.createAsyncContext(req);
+    asyncStorage.run(context, () => next());
+  }
+
   container.register({
+    getAsyncContext: asValue(createAsyncContextGetter<AC>(asyncStorage)),
+    config: options.config,
+    logger: options.logger,
     ...options.providers,
     ...options.controllers,
-    logger: asClass(Logger).singleton(),
-    getAsyncContext: asValue(getAsyncContext),
-    config: asValue(config),
   } as NameAndRegistrationPair<FullCradle>);
 
   const logger = container.resolve<ILogger>('logger');
+  const config = container.resolve<C>('config');
+
+  const app = express();
+  app.use(express.json());
+  app.use(requestContextMiddleware);
 
   for (const key of Object.keys(options.controllers)) {
     const controller = container.resolve<IController>(key);
@@ -76,7 +78,7 @@ export async function createApp<T extends BaseConfig, P, C>(
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 
-  const server = app.listen(port, () => {
-    logger.info(`Service started on port ${port}`);
+  const server = app.listen(config.PORT, () => {
+    logger.info(`Service started on port ${config.PORT}.`);
   });
 }

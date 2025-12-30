@@ -1,31 +1,19 @@
 import { AsyncLocalStorage } from 'async_hooks';
+import e from 'express';
 
-export interface IContext {
-  requestId: string | undefined;
-  logContext: Map<string, number | string | boolean>;
+export interface IAsyncContext {
+  getLogContext(): Record<string, string | number | boolean>;
+  setInLogContext(key: string, value: string | number | boolean): void;
 }
 
-export class Context implements IContext {
-  public requestId: string | undefined;
-  public logContext: Map<string, number | string | boolean>;
+export type AsyncContextGetter<AC extends IAsyncContext> = () => AC;
 
-  constructor(requestId?: string) {
-    this.logContext = new Map();
-    this.requestId = requestId;
-    if (requestId) {
-      this.logContext.set('requestId', requestId);
+export const createAsyncContextGetter = function<AC extends IAsyncContext>(asyncStorage: AsyncLocalStorage<AC>): AsyncContextGetter<AC> {
+  return function() {
+    const context = asyncStorage.getStore();
+    if (!context) {
+      throw new Error('No AsyncContext found in the asyncStorage. Try registering one using asyncStorage.run(...)');
     }
-  }
-}
-
-const asyncStorage = new AsyncLocalStorage<IContext>();
-
-export function getAsyncContext(): Context | undefined {
-  return asyncStorage.getStore();
-}
-
-export type GetAsyncContextFn = typeof getAsyncContext;
-
-export function runWithContext<T>(context: IContext, callback: () => T): T {
-  return asyncStorage.run(context, callback);
+    return context;
+  };
 }

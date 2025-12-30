@@ -1,20 +1,15 @@
-## Commands
+# simple-wire
+simple-wire is an opinionated, lightweight framework for building typescript backends. The main goal of simple-wire is to provide a solid bare minimum structure to help you sustain your delivery speed as your application grows in an unopinionated world such as ExpressJS.
+
+simple-wire's philosophy is that you only need three design patterns to keep delivering efficiently as your application grows:
+
+1. Separate Domain and Presentation Layers
+2. Split Domain into Department Slices
+3. Use Dependency Injection
+
+## Getting Started
+To get started use the following command to create a new simple-wire application using the starter template:
 
 ```bash
-pnpm build               # builds simple-wire, create-simple-wire, and starter-template in order
-pnpm create-simple-wire  # builds create-simple-wire and runs it in parent directory to test create-simple-wire locally
-pnpm clean               # clean all packages
-pnpm dev                 # runs simple-wire and starter-template in dev mode with hot-reloading
-
-pnpm publish:simple-wire         # publishes simple-wire package
-
-# Update SIMPLE_WIRE_VERSION in create-simple-wire src/index.ts before running:
-pnpm publish:create-simple-wire  # publishes create-simple-wire package
-```
-
-
-# Create Simple Wire Application
-```bash
-npx create-simple-wire@latest
 pnpm create simple-wire@latest
 ```
