@@ -1,41 +1,41 @@
 import express, { Request, Response } from "express";
 import { AsyncLocalStorage } from "async_hooks";
 import { InjectionMode, createContainer, asValue, NameAndRegistrationPair, Resolver } from "awilix";
-import { IController } from "./controller";
-import { Logger, ILogger } from "./logger";
-import { AsyncContextGetter, IAsyncContext, createAsyncContextGetter } from "./async-context";
-import { IConfig } from "./config";
+import { SWController } from "./controller";
+import { PinoLogger, SWLogger } from "./logger";
+import { AsyncContextGetter, SWAsyncContext, createAsyncContextGetter } from "./async-context";
+import { SWConfig } from "./config";
 
-export interface BaseCradle<C extends IConfig, AC extends IAsyncContext> {
-  config: C;
-  getAsyncContext: AsyncContextGetter<AC>;
-  logger: ILogger;
+export interface BaseCradle<Config extends SWConfig, AsyncContext extends SWAsyncContext> {
+  config: Config;
+  getAsyncContext: AsyncContextGetter<AsyncContext>;
+  logger: SWLogger;
 }
 
 type StrictMap<T> = {
   [K in keyof T]: Resolver<T[K]>
 };
 
-export interface AppOptions<C extends IConfig, AC extends IAsyncContext, ControllersCradle, ProvidersCradle> {
-  createAsyncContext: (req: Request) => AC;
-  config: Resolver<C>;
-  logger: Resolver<ILogger>;
+export interface AppOptions<Config extends SWConfig, AsyncContext extends SWAsyncContext, ControllersCradle, ProvidersCradle> {
+  createAsyncContext: (req: Request) => AsyncContext;
+  config: Resolver<Config>;
+  logger: Resolver<SWLogger>;
   controllers: StrictMap<ControllersCradle>;
   providers: StrictMap<ProvidersCradle>;
 }
 
-export async function createApp<C extends IConfig, AC extends IAsyncContext, ControllersCradle, ProvidersCradle>(
-  options: AppOptions<C, AC, ControllersCradle, ProvidersCradle>
+export async function createApp<Config extends SWConfig, AsyncContext extends SWAsyncContext, ControllersCradle, ProvidersCradle>(
+  options: AppOptions<Config, AsyncContext, ControllersCradle, ProvidersCradle>
 ) {
 
-  type FullCradle = BaseCradle<C, AC> & ControllersCradle & ProvidersCradle;
+  type FullCradle = BaseCradle<Config, AsyncContext> & ControllersCradle & ProvidersCradle;
 
   const container = createContainer<FullCradle>({
     injectionMode: InjectionMode.PROXY,
     strict: true,
   });
 
-  const asyncStorage = new AsyncLocalStorage<AC>();
+  const asyncStorage = new AsyncLocalStorage<AsyncContext>();
 
   function requestContextMiddleware(req: Request, res: Response, next: Function) {
     const context = options.createAsyncContext(req);
@@ -43,22 +43,22 @@ export async function createApp<C extends IConfig, AC extends IAsyncContext, Con
   }
 
   container.register({
-    getAsyncContext: asValue(createAsyncContextGetter<AC>(asyncStorage)),
+    getAsyncContext: asValue(createAsyncContextGetter<AsyncContext>(asyncStorage)),
     config: options.config,
     logger: options.logger,
     ...options.providers,
     ...options.controllers,
   } as NameAndRegistrationPair<FullCradle>);
 
-  const logger = container.resolve<ILogger>('logger');
-  const config = container.resolve<C>('config');
+  const logger = container.resolve<SWLogger>('logger');
+  const config = container.resolve<Config>('config');
 
   const app = express();
   app.use(express.json());
   app.use(requestContextMiddleware);
 
   for (const key of Object.keys(options.controllers)) {
-    const controller = container.resolve<IController>(key);
+    const controller = container.resolve<SWController>(key);
     const routes = controller.getRoutes();
     routes.forEach((route) => {
       const { method, path, handler } = route;
@@ -67,7 +67,7 @@ export async function createApp<C extends IConfig, AC extends IAsyncContext, Con
   }
 
   const shutdown = () => {
-    const logger = container.resolve<Logger>('logger');
+    const logger = container.resolve<SWLogger>('logger');
     logger.info('SIGTERM received. Shutting down gracefully...');
     server.close(() => {
       logger.info('Closed out remaining connections.');

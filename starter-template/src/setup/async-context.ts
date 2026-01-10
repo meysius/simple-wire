@@ -1,7 +1,7 @@
 import { Request } from "express";
-import { IAsyncContext } from "simple-wire";
+import { SWAsyncContext } from "simple-wire";
 
-export class AsyncContext implements IAsyncContext {
+export class AsyncContext implements SWAsyncContext {
   private logContext: Record<string, string | number | boolean>;
 
   constructor(req: Request) {

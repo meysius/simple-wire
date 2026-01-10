@@ -8,7 +8,7 @@ export interface RouteDefinition {
   handler: RequestHandler;
 }
 
-export interface IController {
+export interface SWController {
   getRoutes(): RouteDefinition[];
 }
 

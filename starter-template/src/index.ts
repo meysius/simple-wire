@@ -1,35 +1,38 @@
+import "dotenv/config";
 import { Request } from "express";
-import { createApp, BaseCradle, Logger } from "simple-wire";
+import { createApp, PinoLogger } from "simple-wire";
 import { asClass, asFunction, asValue } from "awilix";
-import { AsyncContext } from "./async-context";
-import { config, Config } from "./config";
-import { DrizzleDb, createDbClient } from "./db";
+import { AsyncContext } from "@/setup/async-context";
+import { ConfigSchema, Config } from "@/setup/config";
+import { DrizzleDb, createDbClient } from "@/setup/db";
 import { UsersController } from "./controllers/users.controller";
 import { IdentityService } from "./domain/identity/identity.service";
 import { IdentityRepo, DrizzleIdentityRepo } from "./domain/identity/identity.repo";
+
+interface ControllersCradle {
+  usersController: UsersController;
+  // Add more controllers here
+}
 
 interface ProvidersCradle {
   db: DrizzleDb;
   identityService: IdentityService;
   identityRepo: IdentityRepo;
+  // Add more providers here
 }
-
-interface ControllersCradle {
-  usersController: UsersController;
-}
-
-export type AppDependencies = BaseCradle<Config, AsyncContext> & ProvidersCradle & ControllersCradle;
 
 createApp<Config, AsyncContext, ControllersCradle, ProvidersCradle>({
   createAsyncContext: (req: Request) => new AsyncContext(req),
-  logger: asClass(Logger).singleton(),
-  config: asValue(config),
+  logger: asClass(PinoLogger).singleton(),
+  config: asValue(ConfigSchema.parse(process.env)),
   controllers: {
     usersController: asClass(UsersController).singleton(),
+    // Add more controllers here
   },
   providers: {
     db: asFunction(createDbClient).singleton(),
     identityService: asClass(IdentityService).singleton(),
     identityRepo: asClass(DrizzleIdentityRepo).singleton(),
+    // Add more providers here
   },
 });

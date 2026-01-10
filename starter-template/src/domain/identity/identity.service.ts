@@ -1,14 +1,14 @@
-import { ILogger } from "simple-wire";
+import { SWLogger } from "simple-wire";
 import { IdentityRepo } from "./identity.repo";
 import { UsersSelect, UsersInsert } from "./identity.schema";
 
 type Props = {
-  logger: ILogger;
+  logger: SWLogger;
   identityRepo: IdentityRepo;
 };
 
 export class IdentityService {
-  private readonly logger: ILogger;
+  private readonly logger: SWLogger;
   private readonly identityRepo: IdentityRepo;
 
   constructor({ logger, identityRepo }: Props) {

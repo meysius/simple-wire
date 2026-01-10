@@ -1,6 +1,6 @@
-import { integer, pgTable, varchar } from "drizzle-orm/pg-core";
-import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from "zod";
+import { integer, pgTable, varchar } from "drizzle-orm/pg-core";
+import { createSelectSchema, createInsertSchema, createUpdateSchema } from "drizzle-zod";
 
 export const users = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
-import { IController, ILogger, RouteDefinition } from "simple-wire";
-import { IIdentityService } from "@/domain/identity/identity.service";
+import { SWController, SWLogger, RouteDefinition } from "simple-wire";
+import { IdentityService } from "@/domain/identity/identity.service";
 
 type Props = {
-  logger: ILogger;
-  identityService: IIdentityService;
+  logger: SWLogger;
+  identityService: IdentityService;
 };
 
-export class UsersController implements IController {
-  private readonly logger: ILogger;
-  private readonly identityService: IIdentityService;
+export class UsersController implements SWController {
+  private readonly logger: SWLogger;
+  private readonly identityService: IdentityService;
 
   constructor({ identityService, logger }: Props) {
     this.identityService = identityService;

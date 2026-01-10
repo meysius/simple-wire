@@ -1,14 +1,13 @@
 import { AsyncLocalStorage } from 'async_hooks';
-import e from 'express';
 
-export interface IAsyncContext {
+export interface SWAsyncContext {
   getLogContext(): Record<string, string | number | boolean>;
   setInLogContext(key: string, value: string | number | boolean): void;
 }
 
-export type AsyncContextGetter<AC extends IAsyncContext> = () => AC;
+export type AsyncContextGetter<AsyncContextImpl extends SWAsyncContext> = () => AsyncContextImpl;
 
-export const createAsyncContextGetter = function<AC extends IAsyncContext>(asyncStorage: AsyncLocalStorage<AC>): AsyncContextGetter<AC> {
+export const createAsyncContextGetter = function<AsyncContextImpl extends SWAsyncContext>(asyncStorage: AsyncLocalStorage<AsyncContextImpl>): AsyncContextGetter<AsyncContextImpl> {
   return function() {
     const context = asyncStorage.getStore();
     if (!context) {

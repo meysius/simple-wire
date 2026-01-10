@@ -1,4 +1,4 @@
-import { DrizzleDb } from "@/db";
+import { DrizzleDb } from "@/setup/db";
 import { UsersInsert, UsersSelect } from "./identity.schema";
 import { users } from "./identity.schema";
 

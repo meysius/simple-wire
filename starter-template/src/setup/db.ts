@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Config } from '@/config';
+import { Config } from '@/setup/config';
 import * as identitySchema from "@/domain/identity/identity.schema";
 
 export const schema = {

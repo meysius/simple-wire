@@ -1,18 +1,18 @@
 import pino from "pino";
-import { IConfig } from "./config";
-import { AsyncContextGetter, IAsyncContext } from "./async-context";
+import { SWConfig } from "./config";
+import { AsyncContextGetter, SWAsyncContext } from "./async-context";
 
-export interface ILogger {
+export interface SWLogger {
   info(message: string): void;
   error(message: string): void;
 }
 
 type LoggerDeps = {
-  config: IConfig;
-  getAsyncContext: AsyncContextGetter<IAsyncContext>;
+  config: SWConfig;
+  getAsyncContext: AsyncContextGetter<SWAsyncContext>;
 }
 
-export class Logger implements ILogger {
+export class PinoLogger implements SWLogger {
   private readonly pino: pino.Logger;
 
   constructor({ getAsyncContext, config }: LoggerDeps) {
