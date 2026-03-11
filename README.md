@@ -150,10 +150,9 @@ pnpm clean        # Remove dist/ folder
 ### Database (Drizzle)
 
 ```bash
-npx drizzle-kit generate   # Generate migrations from schema changes
-npx drizzle-kit migrate    # Apply pending migrations
-npx drizzle-kit push       # Push schema directly (dev only)
-npx drizzle-kit studio     # Open Drizzle Studio GUI
+pnpm db:generate:migrations   # Generate migration files from schema changes
+pnpm db:migrate               # Apply pending migrations to the database
+pnpm db:studio                # Open Drizzle Studio GUI
 ```
 
 ## Monorepo
