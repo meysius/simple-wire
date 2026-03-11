@@ -246,3 +246,32 @@ The source of truth for what a new simple-wire application looks like. It is a f
 - Per-request `AsyncContext` with `requestId`
 
 It serves two purposes: a **reference** for developers to understand conventions, and the **template source** that `create-simple-wire` bundles and copies when scaffolding new projects.
+
+---
+
+## Contributing
+
+### Development Commands
+
+```bash
+pnpm build               # Build all packages (simple-wire, create-simple-wire, starter-template)
+pnpm dev                 # Run simple-wire and starter-template in dev mode with hot reloading
+pnpm clean               # Remove all dist/, node_modules, and copied template artifacts
+pnpm create-simple-wire  # Build create-simple-wire and run it in the parent directory (local test)
+```
+
+### Publishing
+
+```bash
+pnpm publish:simple-wire         # Build and publish simple-wire to npm
+
+# Update SIMPLE_WIRE_VERSION in packages/create-simple-wire/src/index.ts before running:
+pnpm publish:create-simple-wire  # Build and publish create-simple-wire to npm
+```
+
+### Creating a Simple Wire Application (for testing)
+
+```bash
+npx create-simple-wire@latest
+pnpm create simple-wire@latest
+```
