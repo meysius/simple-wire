@@ -18,9 +18,9 @@
     "noImplicitAny": true,
     "noFallthroughCasesInSwitch": true,
     "outDir": "./dist",
-    "baseUrl": ".",
+    "rootDir": "./src",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],
