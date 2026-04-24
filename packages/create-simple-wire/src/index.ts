@@ -85,13 +85,26 @@ async function init() {
   }
 
   console.log(green(`\n✔ Success! Created ${projectName} at ${targetDir}\n`));
-  console.log('Inside that directory, you can run several commands:\n');
-  console.log(`  ${cyan('pnpm install')}      Install dependencies`);
-  console.log(`  ${cyan('pnpm dev')}          Start the development server`);
-  console.log('Get started by typing:\n');
+
+  console.log(bold('Next steps:\n'));
   console.log(`  ${cyan('cd')} ${projectName}`);
-  console.log(`  ${cyan('pnpm install')}`);
-  console.log(`  ${cyan('pnpm dev')}\n`);
+  console.log(`  ${cyan('pnpm install')}\n`);
+
+  console.log(bold('Configure your environment:\n'));
+  console.log(`  1. Edit ${cyan('.env')} file to customize:`);
+  console.log(`     - ${cyan('DATABASE_URL')}: PostgreSQL connection string`);
+  console.log(`     - ${cyan('PORT')}: Server port (default: 3000)`);
+  console.log(`     - ${cyan('LOG_LEVEL')}: Logging level (default: info)\n`);
+
+  console.log(bold('Set up your database:\n'));
+  console.log(`  ${cyan('pnpm db:create')}        Create the PostgreSQL database`);
+  console.log(`  ${cyan('pnpm db:migrate')}       Apply migrations`);
+  console.log(`  ${cyan('pnpm db:studio')}        Open Drizzle Studio (optional)\n`);
+
+  console.log(bold('Start developing:\n'));
+  console.log(`  ${cyan('pnpm dev')}              Start the development server`);
+  console.log(`  ${cyan('pnpm build')}            Build for production`);
+  console.log(`  ${cyan('pnpm start')}            Run production build\n`);
 }
 
 init().catch((e) => {

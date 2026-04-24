@@ -8,6 +8,8 @@
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rimraf dist",
+    "db:create": "tsx src/scripts/db-create.ts",
+    "db:drop": "tsx src/scripts/db-drop.ts",
     "db:generate:migrations": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
