@@ -2,19 +2,11 @@ import { SWLogger } from "simple-wire";
 import { IdentityRepo } from "./identity.repo";
 import { UsersSelect, UsersInsert } from "./identity.schema";
 
-type Props = {
-  logger: SWLogger;
-  identityRepo: IdentityRepo;
-};
-
 export class IdentityService {
-  private readonly logger: SWLogger;
-  private readonly identityRepo: IdentityRepo;
-
-  constructor({ logger, identityRepo }: Props) {
-    this.logger = logger;
-    this.identityRepo = identityRepo;
-  }
+  constructor(
+    private readonly logger: SWLogger,
+    private readonly identityRepo: IdentityRepo,
+  ) {}
 
   async createUser(userData: UsersInsert): Promise<UsersSelect> {
     this.logger.info("IdentityService.createUser called");

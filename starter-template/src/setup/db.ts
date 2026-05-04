@@ -12,13 +12,7 @@ export type Schema = typeof schema;
 
 export type DrizzleDb = NodePgDatabase<Schema>;
 
-type createDbClientProps = {
-  config: Config;
-};
-
-export function createDbClient({ config }: createDbClientProps): DrizzleDb {
-  const client = new Pool({
-    connectionString: config.DATABASE_URL,
-  });
+export function createDbClient(config: Config): DrizzleDb {
+  const client = new Pool({ connectionString: config.DATABASE_URL });
   return drizzle<Schema>({ client });
 }

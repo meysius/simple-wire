@@ -12,12 +12,14 @@ simple-wire's philosophy is that you only need three design patterns to keep del
 
 ```
 src/
-├── index.ts                     # App entrypoint & DI container wiring
+├── index.ts                     # App entrypoint — calls buildApp(), mounts controllers
 ├── setup/
+│   ├── app.ts                   # buildApp() function — DI wiring
 │   ├── config.ts                # Zod-validated environment config
 │   ├── db.ts                    # Drizzle DB client factory + schema aggregator
 │   └── async-context.ts        # Per-request context (requestId, etc.)
 ├── controllers/
+│   ├── welcome.controller.ts   # GET / — serves the HTML welcome page
 │   └── users.controller.ts     # HTTP route handlers
 └── domain/
     └── identity/               # Example domain slice
@@ -30,48 +32,88 @@ src/
 
 ### Entrypoint (`src/index.ts`)
 
-Calls `createApp()` from `simple-wire` and registers all dependencies into the Awilix DI container. Two typed interfaces define the container's shape:
+Calls `buildApp()` to wire all dependencies, then mounts controllers on Express manually (no `mountControllers` helper — the async context middleware and router are wired inline):
 
 ```typescript
-interface ControllersCradle {
-  usersController: UsersController;
-}
+import express from "express";
+import { buildApp } from "@/setup/app";
+import { AsyncContext } from "@/setup/async-context";
 
-interface ProvidersCradle {
-  db: DrizzleDb;
-  identityService: IdentityService;
-  identityRepo: IdentityRepo;
-}
+const app = buildApp();
+const expressApp = express();
+expressApp.use(express.json());
 
-createApp<Config, AsyncContext, ControllersCradle, ProvidersCradle>({ ... });
+expressApp.use((req, _res, next) => {
+  app.asyncStorage.run(new AsyncContext(req), () => next());
+});
+
+const router = Router();
+for (const controller of app.controllers) {
+  controller.register(router);
+}
+expressApp.use(router);
 ```
+
+### App Builder (`src/setup/app.ts`)
+
+The synchronous `buildApp()` function owns all dependency instantiation and returns a plain object:
+
+```typescript
+export function buildApp(): App {
+  const cfg = ConfigSchema.parse(process.env);
+  const asyncStorage = new AsyncLocalStorage<AsyncContext>();
+  const getAsyncContext = createAsyncContextGetter(asyncStorage);
+
+  const logger = new PinoLogger(cfg, getAsyncContext);
+  const db = createDbClient(cfg);
+
+  const identityRepo = new DrizzleIdentityRepo(db);
+  const identityService = new IdentityService(logger, identityRepo);
+
+  const controllers: SWController[] = [
+    new WelcomeController(),
+    new UsersController(logger, identityService),
+  ];
+
+  return {
+    cfg,
+    logger,
+    db,
+    asyncStorage,
+    controllers,
+    shutdown: async () => {},
+  };
+}
+```
+
+`WelcomeController` is registered first so `GET /` is handled before any other routes. To remove the welcome page, delete that line and its import.
 
 ### Dependency Injection
 
-All classes receive their dependencies via constructor injection using a typed `Props` object:
+All classes receive their dependencies via constructor injection using positional parameters:
 
 ```typescript
-type Props = {
-  logger: SWLogger;
-  identityRepo: IdentityRepo;
-};
-
 export class IdentityService {
-  constructor({ logger, identityRepo }: Props) { ... }
+  constructor(
+    private readonly logger: SWLogger,
+    private readonly identityRepo: IdentityRepo,
+  ) {}
 }
 ```
 
+Dependencies are wired manually in `buildApp()` — no DI container is imposed.
+
 ### Controllers
 
-Controllers implement the `SWController` interface and define their routes via `getRoutes()`:
+Controllers implement the `SWController` interface and register their routes via `register(router)`:
 
 ```typescript
+import { Router } from "express";
+
 export class UsersController implements SWController {
-  getRoutes(): RouteDefinition[] {
-    return [
-      { method: 'get',  path: '/users', handler: this.listUsers },
-      { method: 'post', path: '/users', handler: this.createUser },
-    ];
+  register(router: Router): void {
+    router.get("/users", this.listUsers);
+    router.post("/users", this.createUser);
   }
 }
 ```
@@ -88,7 +130,7 @@ Each domain owns its schema, repo, and service in one folder. The three-file pat
 | `*.repo.ts` | Repository interface + Drizzle implementation |
 | `*.service.ts` | Business logic, depends on the repo |
 
-Add new domains by creating a new folder under `src/domain/` following the same pattern, then registering them in `src/index.ts` and `src/setup/db.ts`.
+Add new domains by creating a new folder under `src/domain/` following the same pattern, then registering them in `src/setup/app.ts` and `src/setup/db.ts`.
 
 ### Configuration
 

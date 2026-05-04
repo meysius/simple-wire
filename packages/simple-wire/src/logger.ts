@@ -7,15 +7,10 @@ export interface SWLogger {
   error(message: string): void;
 }
 
-type LoggerDeps = {
-  config: SWConfig;
-  getAsyncContext: AsyncContextGetter<SWAsyncContext>;
-}
-
 export class PinoLogger implements SWLogger {
   private readonly pino: pino.Logger;
 
-  constructor({ getAsyncContext, config }: LoggerDeps) {
+  constructor(config: SWConfig, getAsyncContext: AsyncContextGetter<SWAsyncContext>) {
     this.pino = pino({
       mixin: () => {
         let logContext = {};

@@ -28,7 +28,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "awilix": "^12.0.5",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
     "drizzle-zod": "^0.8.3",

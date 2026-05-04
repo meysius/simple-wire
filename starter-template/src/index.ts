@@ -1,38 +1,35 @@
 import "dotenv/config";
-import { Request } from "express";
-import { createApp, PinoLogger } from "simple-wire";
-import { asClass, asFunction, asValue } from "awilix";
+import express, { Router, Request, Response, NextFunction } from "express";
+import { buildApp } from "@/setup/app";
 import { AsyncContext } from "@/setup/async-context";
-import { ConfigSchema, Config } from "@/setup/config";
-import { DrizzleDb, createDbClient } from "@/setup/db";
-import { UsersController } from "./controllers/users.controller";
-import { IdentityService } from "./domain/identity/identity.service";
-import { IdentityRepo, DrizzleIdentityRepo } from "./domain/identity/identity.repo";
 
-interface ControllersCradle {
-  usersController: UsersController;
-  // Add more controllers here
-}
+const app = buildApp();
 
-interface ProvidersCradle {
-  db: DrizzleDb;
-  identityService: IdentityService;
-  identityRepo: IdentityRepo;
-  // Add more providers here
-}
+const expressApp = express();
+expressApp.use(express.json());
 
-createApp<Config, AsyncContext, ControllersCradle, ProvidersCradle>({
-  createAsyncContext: (req: Request) => new AsyncContext(req),
-  logger: asClass(PinoLogger).singleton(),
-  config: asValue(ConfigSchema.parse(process.env)),
-  controllers: {
-    usersController: asClass(UsersController).singleton(),
-    // Add more controllers here
-  },
-  providers: {
-    db: asFunction(createDbClient).singleton(),
-    identityService: asClass(IdentityService).singleton(),
-    identityRepo: asClass(DrizzleIdentityRepo).singleton(),
-    // Add more providers here
-  },
+expressApp.use((req: Request, _res: Response, next: NextFunction) => {
+  app.asyncStorage.run(new AsyncContext(req), () => next());
 });
+
+const router = Router();
+for (const controller of app.controllers) {
+  controller.register(router);
+}
+expressApp.use(router);
+
+const server = expressApp.listen(app.cfg.PORT, () => {
+  app.logger.info(`Service started on port ${app.cfg.PORT}.`);
+});
+
+const shutdown = async () => {
+  app.logger.info("SIGTERM received. Shutting down gracefully...");
+  server.close(async () => {
+    await app.shutdown();
+    app.logger.info("Closed out remaining connections.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

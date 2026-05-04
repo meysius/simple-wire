@@ -21,22 +21,25 @@ This will prompt you for a project name, scaffold a new project from the starter
 The generated project comes pre-wired with:
 
 - **Express** — HTTP server
-- **Awilix** — Dependency injection container
 - **Zod** — Environment config validation
 - **Pino** — Structured logging with per-request context
 - **Drizzle ORM** — Database access with PostgreSQL
 - **AsyncLocalStorage** — Per-request context (e.g. `requestId`) propagated through the entire call chain
 
+Dependency injection is handled manually in your `App` class — no DI container is imposed on you.
+
 ## Project Structure
 
 ```
 src/
-├── index.ts                     # App entrypoint & DI container wiring
+├── index.ts                     # App entrypoint — calls buildApp(), mounts controllers
 ├── setup/
+│   ├── app.ts                   # buildApp() function — DI wiring
 │   ├── config.ts                # Zod-validated environment config
 │   ├── db.ts                    # Drizzle DB client factory + schema aggregator
 │   └── async-context.ts        # Per-request context (requestId, etc.)
 ├── controllers/
+│   ├── welcome.controller.ts   # GET / — serves the HTML welcome page
 │   └── users.controller.ts     # HTTP route handlers
 └── domain/
     └── identity/               # Example domain slice
@@ -49,48 +52,110 @@ src/
 
 ### Entrypoint (`src/index.ts`)
 
-Calls `createApp()` from `simple-wire` and registers all dependencies into the Awilix DI container. Two typed interfaces define the container's shape:
+Calls `buildApp()` to wire all dependencies, then wires the async context middleware and mounts controllers on an Express router:
 
 ```typescript
-interface ControllersCradle {
-  usersController: UsersController;
-}
+import express, { Router, Request, Response, NextFunction } from "express";
+import { buildApp } from "@/setup/app";
+import { AsyncContext } from "@/setup/async-context";
 
-interface ProvidersCradle {
-  db: DrizzleDb;
-  identityService: IdentityService;
-  identityRepo: IdentityRepo;
-}
+const app = buildApp();
+const expressApp = express();
+expressApp.use(express.json());
 
-createApp<Config, AsyncContext, ControllersCradle, ProvidersCradle>({ ... });
+expressApp.use((req: Request, _res: Response, next: NextFunction) => {
+  app.asyncStorage.run(new AsyncContext(req), () => next());
+});
+
+const router = Router();
+for (const controller of app.controllers) {
+  controller.register(router);
+}
+expressApp.use(router);
+
+const server = expressApp.listen(app.cfg.PORT, () => {
+  app.logger.info(`Service started on port ${app.cfg.PORT}.`);
+});
+
+const shutdown = async () => {
+  app.logger.info("SIGTERM received. Shutting down gracefully...");
+  server.close(async () => {
+    await app.shutdown();
+    app.logger.info("Closed out remaining connections.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 ```
+
+### App Builder (`src/setup/app.ts`)
+
+The synchronous `buildApp()` function owns all dependency instantiation and returns a typed `App` object:
+
+```typescript
+import { AsyncLocalStorage } from "async_hooks";
+import { PinoLogger, createAsyncContextGetter, SWController } from "simple-wire";
+import { Config, ConfigSchema } from "@/setup/config";
+import { AsyncContext } from "@/setup/async-context";
+import { createDbClient, DrizzleDb } from "@/setup/db";
+import { WelcomeController } from "@/controllers/welcome.controller";
+import { UsersController } from "@/controllers/users.controller";
+
+export function buildApp(): App {
+  const cfg = ConfigSchema.parse(process.env);
+  const asyncStorage = new AsyncLocalStorage<AsyncContext>();
+  const getAsyncContext = createAsyncContextGetter(asyncStorage);
+
+  const logger = new PinoLogger(cfg, getAsyncContext);
+  const db = createDbClient(cfg);
+
+  const identityRepo = new DrizzleIdentityRepo(db);
+  const identityService = new IdentityService(logger, identityRepo);
+
+  const controllers: SWController[] = [
+    new WelcomeController(),
+    new UsersController(logger, identityService),
+  ];
+
+  return {
+    cfg,
+    logger,
+    db,
+    asyncStorage,
+    controllers,
+    shutdown: async () => {},
+  };
+}
+```
+
+`WelcomeController` serves an HTML welcome page at `GET /` — remove it and its import when you're ready to ship.
 
 ### Dependency Injection
 
-All classes receive their dependencies via constructor injection using a typed `Props` object:
+All classes receive their dependencies via constructor injection using positional parameters:
 
 ```typescript
-type Props = {
-  logger: SWLogger;
-  identityRepo: IdentityRepo;
-};
-
 export class IdentityService {
-  constructor({ logger, identityRepo }: Props) { ... }
+  constructor(
+    private readonly logger: SWLogger,
+    private readonly identityRepo: IdentityRepo,
+  ) {}
 }
 ```
 
 ### Controllers
 
-Controllers implement the `SWController` interface and define their routes via `getRoutes()`:
+Controllers implement the `SWController` interface and register their routes via `register(router)`:
 
 ```typescript
+import { Router } from "express";
+
 export class UsersController implements SWController {
-  getRoutes(): RouteDefinition[] {
-    return [
-      { method: 'get',  path: '/users', handler: this.listUsers },
-      { method: 'post', path: '/users', handler: this.createUser },
-    ];
+  register(router: Router): void {
+    router.get("/users", this.listUsers);
+    router.post("/users", this.createUser);
   }
 }
 ```
@@ -107,7 +172,7 @@ Each domain owns its schema, repo, and service in one folder. The three-file pat
 | `*.repo.ts` | Repository interface + Drizzle implementation |
 | `*.service.ts` | Business logic, depends on the repo |
 
-Add new domains by creating a new folder under `src/domain/` following the same pattern, then registering them in `src/index.ts` and `src/setup/db.ts`.
+Add new domains by creating a new folder under `src/domain/` following the same pattern, then registering them in `src/setup/app.ts` and `src/setup/db.ts`.
 
 ### Configuration
 
@@ -188,22 +253,20 @@ pnpm publish:create-simple-wire   # Build and publish create-simple-wire to npm
 
 **npm:** `simple-wire` · **Version:** `0.0.1` · **License:** MIT
 
-The core library that applications import. It wires together Express, Awilix, and Pino into a single `createApp()` call.
+The core library that applications import. It provides interfaces and utilities for logging, async context, and controller routing — without imposing a DI container or application structure.
 
 **Exports:**
 
 | Export | Description |
 |---|---|
-| `createApp()` | Bootstraps the Express server, registers the DI container, mounts all controller routes, and handles graceful shutdown |
-| `SWController` | Interface every controller must implement (`getRoutes(): RouteDefinition[]`) |
-| `RouteDefinition` | `{ path, method, handler }` route descriptor |
+| `SWController` | Interface every controller must implement (`register(router: Router): void`) |
 | `SWConfig` | Base config interface (`NODE_ENV`, `PORT`, `LOG_LEVEL`) |
 | `SWAsyncContext` | Per-request context interface (`getLogContext`, `setInLogContext`) |
+| `createAsyncContextGetter` | Factory that creates a typed getter function from an `AsyncLocalStorage` instance |
 | `SWLogger` | Logger interface (`info`, `error`) |
-| `PinoLogger` | Built-in Pino implementation of `SWLogger`; auto-merges async context into every log line |
-| `BaseCradle` | Base DI cradle type (`config`, `logger`, `getAsyncContext`) |
+| `PinoLogger` | Built-in Pino implementation of `SWLogger`; auto-merges async context into every log line. Constructor: `new PinoLogger(config, getAsyncContext)` |
 
-**Peer dependencies:** `express`, `awilix`, `pino`, `zod`
+**Peer dependencies:** `express`, `pino`, `pino-pretty`, `zod`
 
 **Build:** `pnpm build` (TypeScript → `dist/`); `pnpm dev` for watch mode.
 
@@ -238,6 +301,7 @@ npx create-simple-wire@latest
 
 The source of truth for what a new simple-wire application looks like. It is a fully working Express API with:
 
+- A `WelcomeController` serving a `GET /` HTML welcome page (remove when ready to ship)
 - A `UsersController` with `GET /users` and `POST /users`
 - An `identity` domain slice (schema, repo, service)
 - Drizzle ORM + PostgreSQL with migrations

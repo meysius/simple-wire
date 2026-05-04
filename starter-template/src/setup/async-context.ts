@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Request } from "express";
 import { SWAsyncContext } from "simple-wire";
 
@@ -5,7 +6,7 @@ export class AsyncContext implements SWAsyncContext {
   private logContext: Record<string, string | number | boolean>;
 
   constructor(req: Request) {
-    const requestId = (req.headers['x-request-id'] as string) || `req-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const requestId = (req.headers['x-request-id'] as string) || randomUUID();
     this.logContext = { requestId };
   }
 
