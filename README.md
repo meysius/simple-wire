@@ -326,10 +326,11 @@ pnpm create-simple-wire  # Build create-simple-wire and run it in the parent dir
 ### Publishing
 
 ```bash
-pnpm publish:simple-wire         # Build and publish simple-wire to npm
-
-# Update SIMPLE_WIRE_VERSION in packages/create-simple-wire/src/index.ts before running:
-pnpm publish:create-simple-wire  # Build and publish create-simple-wire to npm
+1. npm login
+2. Update version number of simple-wire in packages/simple-wire/package.json
+3. pnpm publish:simple-wire
+4. Update SIMPLE_WIRE_VERSION in packages/create-simple-wire/src/index.ts
+5. pnpm publish:create-simple-wire
 ```
 
 ### Creating a Simple Wire Application (for testing)

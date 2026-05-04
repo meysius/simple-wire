@@ -5,7 +5,7 @@ import path from 'node:path';
 import prompts from 'prompts';
 import { red, green, cyan, bold } from 'kleur/colors';
 
-const SIMPLE_WIRE_VERSION = '0.0.2';
+const SIMPLE_WIRE_VERSION = '0.0.3';
 
 async function init() {
   console.log(bold(cyan('\n⚡  Creating a new Simple Wire application\n')));

@@ -1,7 +1,7 @@
 {
   "name": "create-simple-wire",
   "description": "Create a new simple-wire application",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "bin": {
     "create-simple-wire": "dist/index.js"
   },
